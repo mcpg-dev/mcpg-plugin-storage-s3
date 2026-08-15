@@ -1,0 +1,52 @@
+[package]
+name = "mcpg-plugin-storage-s3"
+version = "0.1.0-beta.13"
+license = "Apache-2.0"
+edition = "2024"
+description = """
+S3-compatible content-store plugin for the MCPG gateway. Targets AWS
+S3 by default; works against any S3-API service (MinIO, Cloudflare
+R2, Backblaze B2, Wasabi, Ceph, …) by setting `endpoint_url` +
+`force_path_style` in the operator config.
+
+Implements `mcpg_backend_llm_shared::ContentStorePlugin` with
+`type_name = "s3"`. Off by default — gateways opt in via the
+`s3-content-store` feature flag, which path-deps this crate.
+"""
+
+[dependencies]
+mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-backend-llm-shared = { git = "https://github.com/mcpg-dev/mcpg-backend-llm-shared", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+async-trait = "0.1"
+# Pin the MODERN AWS HTTPS client (aws-lc-rs / rustls 0.23) and keep the
+# tree off the EOL rustls 0.21 + rustls-webpki 0.101 stack
+# (GHSA-82j2-j2ch-gfr8 et al.). The trap: the AWS SDK crates' `rustls`
+# feature maps to the LEGACY `tls-rustls` → `connector-hyper-0-14-x` →
+# hyper-0.14 + hyper-rustls 0.24 + rustls 0.21 path. The modern path is
+# `default-https-client` (→ `rustls-aws-lc`). So we disable defaults and
+# select `default-https-client` explicitly, NOT `rustls`. (aws-config's own
+# `rustls` feature happens to alias the modern client, but we use
+# `default-https-client` on both for clarity + future-proofing.)
+aws-config = { version = "1", default-features = false, features = [
+    "behavior-version-latest",
+    "default-https-client",
+    "rt-tokio",
+    "credentials-process",
+    "sso",
+] }
+aws-credential-types = "1"
+aws-sdk-s3 = { version = "1", default-features = false, features = [
+    "behavior-version-latest",
+    "default-https-client",
+] }
+base64 = "0.22"
+blake3 = "1"
+bytes = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
