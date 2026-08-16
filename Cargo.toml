@@ -1,6 +1,6 @@
 [package]
 name = "mcpg-plugin-storage-s3"
-version = "0.1.0-beta.13"
+version = "0.1.0-beta.14"
 license = "Apache-2.0"
 edition = "2024"
 description = """
@@ -15,8 +15,8 @@ Implements `mcpg_backend_llm_shared::ContentStorePlugin` with
 """
 
 [dependencies]
-mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
-mcpg-backend-llm-shared = { git = "https://github.com/mcpg-dev/mcpg-backend-llm-shared", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14" }
+mcpg-backend-llm-shared = { git = "https://github.com/mcpg-dev/mcpg-backend-llm-shared", tag = "v0.1.0-beta.14", version = "=0.1.0-beta.14" }
 async-trait = "0.1"
 # Pin the MODERN AWS HTTPS client (aws-lc-rs / rustls 0.23) and keep the
 # tree off the EOL rustls 0.21 + rustls-webpki 0.101 stack
