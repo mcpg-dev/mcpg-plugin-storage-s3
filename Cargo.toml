@@ -1,6 +1,6 @@
 [package]
 name = "mcpg-plugin-storage-s3"
-version = "0.1.0-beta.39"
+version = "0.1.0-beta.40"
 license = "Apache-2.0"
 edition = "2024"
 description = """
@@ -12,11 +12,31 @@ R2, Backblaze B2, Wasabi, Ceph, …) by setting `endpoint_url` +
 Implements `mcpg_backend_llm_shared::ContentStorePlugin` with
 `type_name = "s3"`. Off by default — gateways opt in via the
 `s3-content-store` feature flag, which path-deps this crate.
+
+As a loadable plugin it ships the `s3_objects` watch strategy: each object
+created, modified or deleted under a bucket prefix as an MCP Event, from a
+listing or from the bucket's event notifications on SQS.
 """
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+# Gate declare_plugin! behind these — the gateway path-deps this crate, and
+# an ungated export would collide with every other plugin's
+# mcpg_plugin_register symbol.
+cdylib-export = []
+static-firstparty = []
+# Gates the docker-backed LocalStack suite and the live AWS suite (which
+# skips unless S3_LIVE_* is set) so plain `cargo test` stays cheap.
+# Run: `cargo test -p mcpg-plugin-storage-s3 --features integration-tests`.
+integration-tests = []
+
 [dependencies]
-mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.39", version = "=0.1.0-beta.39" }
-mcpg-backend-llm-shared = { git = "https://github.com/mcpg-dev/mcpg-backend-llm-shared", tag = "v0.1.0-beta.39", version = "=0.1.0-beta.39" }
+mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.40", version = "=0.1.0-beta.40" }
+mcpg-plugin-sdk = { git = "https://github.com/mcpg-dev/mcpg-plugin-sdk", tag = "v0.1.0-beta.41", version = "=0.1.0-beta.41", features = ["static-firstparty"] }
+mcpg-backend-llm-shared = { git = "https://github.com/mcpg-dev/mcpg-backend-llm-shared", tag = "v0.1.0-beta.40", version = "=0.1.0-beta.40" }
 async-trait = "0.1"
 # Pin the MODERN AWS HTTPS client (aws-lc-rs / rustls 0.23) and keep the
 # tree off the EOL rustls 0.21 + rustls-webpki 0.101 stack
@@ -39,6 +59,11 @@ aws-sdk-s3 = { version = "1", default-features = false, features = [
     "behavior-version-latest",
     "default-https-client",
 ] }
+# The bucket's event notifications arrive on an SQS queue.
+aws-sdk-sqs = { version = "1", default-features = false, features = [
+    "behavior-version-latest",
+    "default-https-client",
+] }
 base64 = "0.23"
 blake3 = "1"
 bytes = "1"
@@ -46,7 +71,12 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "serd
 hex = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The watch's own runtime: the cdylib boundary is synchronous.
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
 tracing = "0.1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+testcontainers = "0.27"
+
+wiremock = "0.6"

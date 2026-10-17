@@ -1,0 +1,38 @@
+schema: mcpg.dev/plugin/v1
+id: dev.mcpg.storage.s3
+name: S3 Objects Watch Strategy
+license: Apache-2.0
+description: |
+  Watches an Amazon S3 bucket, or an S3-compatible one (MinIO, Cloudflare R2,
+  Backblaze B2, Ceph), and reports each object created, modified or deleted
+  under a prefix as the shared `object.changed` MCP Event. The `s3_objects`
+  strategy lists the prefix on a cadence and resumes exactly after a restart;
+  an SQS queue of the bucket's event notifications, when given, makes it list
+  at once. In `notifications` mode it reads only that queue, for a bucket too
+  large to list, and deletes each notification once the gateway has stored
+  its events. The same crate is the gateway's built-in `s3` content store.
+class: watch_strategy
+runtime: native-cdylib-v1
+protocol_version: "1.0"
+required_capabilities: [network_outbound]
+# MCP Events: the prefix as an inventory of objects.
+watch_strategies:
+  - kind: s3_objects
+    placement: single_owner
+    resume: true
+    event_types:
+      - name: object.changed
+        description: An object under the watched prefix was created, modified or deleted.
+        payload_schema:
+          type: object
+          required: [op, store, location, key]
+          properties:
+            op: { enum: [created, modified, deleted] }
+            store: { type: string, description: The kind of store - s3 here. }
+            location: { type: string, description: "s3://bucket/prefix/." }
+            key: { type: string, description: The object key relative to the prefix. }
+            size: { type: integer }
+            modifiedAt: { type: string, description: When it last changed, RFC 3339. }
+            etag: { type: string }
+            version: { type: string, description: The version id, from a notification on a versioned bucket. }
+            eventName: { type: string, description: "The S3 event, in notifications mode: ObjectCreated:Put, ObjectRemoved:Delete, …" }

@@ -35,6 +35,26 @@ pub mod store;
 
 pub use store::{S3ContentStore, S3ContentStoreConfig, S3StaticCredentials};
 
+/// The `s3_objects` watch strategy: each object created, modified or
+/// deleted under a bucket prefix as an MCP Event.
+pub mod watch;
+
+// The loadable plugin is the watch strategy; the content store links in.
+mcpg_plugin_sdk::declare_plugin! {
+    plugin_id: "dev.mcpg.storage.s3",
+    plugin_version: env!("CARGO_PKG_VERSION"),
+    descriptor_yaml: include_str!("../plugin.yaml"),
+    capabilities: &[::mcpg_plugin_protocol::capability::Capability::NetworkOutbound],
+    entities: [
+        watch_strategy as objects_watch {
+            inner_name: "",
+            plugin_type: watch::S3WatchCdylib,
+            factory: |cfg: &str, host: ::mcpg_plugin_sdk::HostHandle|
+                watch::S3WatchCdylib::from_host_config(cfg, host),
+        },
+    ],
+}
+
 const PLUGIN_VERSION: &str = env!("CARGO_PKG_VERSION");
 const PROTOCOL_VERSION: &str = "1.0";
 
