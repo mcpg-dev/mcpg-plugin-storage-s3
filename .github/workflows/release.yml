@@ -29,5 +29,6 @@ jobs:
   release:
     uses: mcpg-dev/.github/.github/workflows/release.yml@main
     with:
-      tier: lib
+      tier: plugin
+      plugin_short: storage-s3
     secrets: inherit
